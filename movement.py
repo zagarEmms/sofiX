@@ -4,6 +4,7 @@ import board
 import adafruit_dht
 
 GPIO.setmode(GPIO.BCM)
+
 led = 4
 laser = 5
 cont = 0
@@ -16,30 +17,37 @@ ECHO = 27
 GPIO.setup(TRIG, GPIO.OUT)
 GPIO.setup(ECHO, GPIO.IN)
 
-# servo
-servoPin = 22
-GPIO.setup(servoPin, GPIO.OUT)
-GPIO.output(servoPin, GPIO.LOW)
-p = GPIO.PWM(servoPin, 50)
-p.start(0)
-
 # temp and humidity sensor
 dhtDevice = adafruit_dht.DHT11(board.D22)
 
-# l298n
+#l298n
 in1 = 26
 in2 = 16
 in3 = 6
 in4 = 5
+ENA = 25
+ENB = 24
+
+temp1 = 1
+
+GPIO.setmode(GPIO.BCM)
 GPIO.setup(in1, GPIO.OUT)
 GPIO.setup(in2, GPIO.OUT)
 GPIO.setup(in3, GPIO.OUT)
 GPIO.setup(in4, GPIO.OUT)
+GPIO.setup(ENA, GPIO.OUT)
+GPIO.setup(ENB, GPIO.OUT)
+
 GPIO.output(in1, GPIO.LOW)
 GPIO.output(in2, GPIO.LOW)
 GPIO.output(in3, GPIO.LOW)
 GPIO.output(in4, GPIO.LOW)
 
+pa = GPIO.PWM(ENA, 1000)
+pb = GPIO.PWM(ENB, 1000)
+
+pa.start(25)
+pb.start(25)
 
 def calculate_distance():
     GPIO.output(TRIG, True)
@@ -70,45 +78,46 @@ def calc_hum():
     return dhtDevice.humidity
 
 
-def servo_laser_work():
-    p.ChangeDutyCycle(2.5)
-    time.sleep(0.5)
-    p.ChangeDutyCycle(5)
-    time.sleep(0.5)
-    print("1")
-    p.ChangeDutyCycle(7.5)
-    time.sleep(0.5)
-    print("2")
-    p.ChangeDutyCycle(10)
-    time.sleep(0.5)
-    print("3")
-    p.ChangeDutyCycle(12.5)
-    time.sleep(0.5)
-    print("4")
-    p.ChangeDutyCycle(10)
-    time.sleep(0.5)
-    print("5")
-    p.ChangeDutyCycle(7.5)
-    time.sleep(0.5)
-    print("6")
-    p.ChangeDutyCycle(5)
-    time.sleep(0.5)
-    print("7")
-    p.ChangeDutyCycle(2.5)
-    time.sleep(0.5)
-    print("8")
+def get_ldr_sensor(ldr_pin):
+
+    count = 0
+
+    # Output on the pin for
+    GPIO.setup(ldr_pin, GPIO.OUT)
+    GPIO.output(ldr_pin, GPIO.LOW)
+    time.sleep(0.1)
+
+    # Change the pin back to input
+    GPIO.setup(ldr_pin, GPIO.IN)
+
+    # Count until the pin goes high
+    while GPIO.input(ldr_pin) == GPIO.LOW:
+        count += 1
+
+    return count
 
 
-def motor_movement():
-    GPIO.output(in1, GPIO.HIGH)
-    GPIO.output(in2, GPIO.LOW)
-    GPIO.output(in3, GPIO.HIGH)
-    GPIO.output(in4, GPIO.LOW)
+def turn(turnb):
+    if turnb:
+        GPIO.output(in1, GPIO.LOW)
+        GPIO.output(in2, GPIO.HIGH)
+        GPIO.output(in3, GPIO.HIGH)
+        GPIO.output(in4, GPIO.LOW)
+        time.sleep(2)
+
+    else:
+        GPIO.output(in1, GPIO.HIGH)
+        GPIO.output(in2, GPIO.LOW)
+        GPIO.output(in3, GPIO.LOW)
+        GPIO.output(in4, GPIO.HIGH)
+        time.sleep(2)
+
+    return not turnb
 
 
 if __name__ == '__main__':
     # servo_laser_work()
-    motor_movement()
+    turnb = False
 
     while True:
         try:
@@ -131,6 +140,10 @@ if __name__ == '__main__':
 
             time.sleep(2)
         """
+            dist = calculate_distance()
+            if dist < 10:
+                turn(turnb)
+
             GPIO.cleanup()
         except RuntimeError as error:
             print(error.args[0])
