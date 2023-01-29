@@ -206,7 +206,7 @@ if __name__ == '__main__':
     ddbb_info = connect_ddbb()
     GPIO.setmode(GPIO.BCM)
 
-    # Creation of 3 Threads to execute the program at the same time
+    # Creation of 3 Threads to execute the main functionalities at the same time
 
     # create a Thread for the sensors (ldr, humidity and temperature)
     thread = threading.Thread(target=get_thread_sensors)
